@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>localhost</title>
+  <style>
+    body {
+      height: 100vh;
+      margin: 0;
+      background-color: #333; /* Dark Background */
+      font-family: Segoe UI;
+      color: #fff; /* Light Text Color */
+    }
+  
+    .connection-container {
+      display: flex;
+      align-items: center;
+    }
+  
+    .icon-container {
+      margin: 0 10px;
+    }
+  
+    .line-container {
+      position: relative;
+      width: 100px;
+    }
+  
+    .line {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background-color: red; /* Default color when not connected */
+      animation: moveLine 2s forwards; /* Animation duration and fill mode */
+    }
+  
+    /* Change line color when connection is established */
+    .connection-established .line {
+      background-color: rgb(0, 255, 0);
+    }
+  
+    #online-users {
+      margin-top: 20px;
+    }
+  
+    /* Styles for the chat interface */
+    #chat-container {
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #444; /* Darker Background for Chat Container */
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+    }
+  
+    #messages {
+      max-height: 200px;
+      overflow-y: auto;
+      border: 1px solid #666; /* Darker Border for Messages */
+      padding: 10px;
+    }
+  
+    #message-input {
+      margin-top: 10px;
+      padding: 5px;
+      color: #333; /* Darker Text Color for Input */
+      border-radius: 0; /* Remove rounded corners */
+      outline: none; /* Remove focus outline */
+    }
+      
+    button {
+      margin-top: 10px;
+      padding: 5px 10px;
+      background-color: #4caf50;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+  
+    /* Lighter color for icons */
+    .icon-container img {
+      filter: brightness(1.5); /* Adjust brightness for lighter icons */
+    }
+  
+    @keyframes moveLine {
+      to {
+        width: 100%;
+      }
+    }
+  </style>  
+</head>
+<body>
+  <br>
+
+  <!-- CONNECTION ANIMATION -->
+  <div class="connection-container">
+    <div class="icon-container">
+      <img src="icons/servers.png" alt="Server Icon" width="100" height="100">
+    </div>
+    <div class="line-container">
+      <div class="line"></div>
+    </div>
+    <div class="icon-container">
+      <img src="icons/monitor.png" alt="PC Icon" width="100" height="100">
+    </div>
+  </div>
+
+  <h1>Connected Successfully.</h1>
+  <!-- CONNECTION ANIMATION -->
+
+
+  <!-- CHAT -->
+  <div id="chat-container">
+    <div id="messages"></div>
+    <input type="text" id="message-input" placeholder="Type your message..." onkeydown="handleKeyPress(event)">
+    <button onclick="sendMessage()">Send</button>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.1.3/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    function appendMessage(message) {
+      const messagesDiv = document.getElementById('messages');
+      const messageElement = document.createElement('div');
+      messageElement.textContent = message;
+      messagesDiv.appendChild(messageElement);
+    }
+
+    function sendMessage() {
+      const messageInput = document.getElementById('message-input');
+      const message = messageInput.value;
+      if (message.trim() !== '') {
+        const username = "User"; // Replace with the actual username logic
+        const fullMessage = `${username} : ${message}`;
+        socket.emit('chatMessage', fullMessage);
+        messageInput.value = '';
+      }
+    }
+
+    // Function to check and update connection status
+    function checkConnectionStatus() {
+      var lineContainer = document.querySelector('.line-container');
+
+      if (navigator.onLine) {
+        lineContainer.classList.add('connection-established');
+      } else {
+        lineContainer.classList.remove('connection-established');
+      }
+    }
+
+    // Function to handle key press events (e.g., Enter key)
+    function handleKeyPress(event) {
+      if (event.key === 'Enter') {
+        sendMessage();
+      }
+    }
+
+    // Call the functions initially
+    checkConnectionStatus();
+
+    // Set up an interval to check connection status periodically (every 5 seconds in this example)
+    setInterval(function () {
+      checkConnectionStatus();
+    }, 5000);
+
+    // Increment online users count on page load
+    window.addEventListener('load', function () {
+      socket.emit('incrementOnlineUsers');
+    });
+
+    // Decrement online users count on page unload
+    window.addEventListener('beforeunload', function () {
+      socket.emit('decrementOnlineUsers');
+    });
+
+    // Update online users count when received from the server
+    socket.on('updateOnlineUsers', function (count) {
+      document.getElementById('user-count').textContent = count;
+    });
+
+    // Function to scroll to the bottom of the chat container
+    function scrollToBottom() {
+        const messagesDiv = document.getElementById('messages');
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      }
+
+      // Listen for chat messages from the server
+      socket.on('chatMessage', function (message) {
+        appendMessage(message);
+        scrollToBottom(); // Scroll to the bottom when a new message is added
+      });
+  </script>
+  <!-- CHAT -->
+
+
+</body>
+</html>
